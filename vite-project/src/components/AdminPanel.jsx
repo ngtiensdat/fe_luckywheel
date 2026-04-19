@@ -48,7 +48,7 @@ const AdminPanel = () => {
   const deleteUser = async (id) => {
     if(window.confirm('Chắc chắn xóa người dùng này?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/admin/users/${id}`);
+        await axios.delete(import.meta.env.VITE_API_BASE_URL + `/api/admin/users/${id}`);
         fetchUsers();
       } catch(e) { alert('Lỗi xóa'); }
     }
@@ -57,7 +57,7 @@ const AdminPanel = () => {
   const updateSpins = async (id, currentSpins) => {
     try {
       const u = users.find(x => x.id === id);
-      await axios.put(`http://localhost:8080/api/admin/users/${id}`, {
+      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/users/${id}`, {
         ...u,
         spins: newSpins
       });
@@ -78,14 +78,14 @@ const AdminPanel = () => {
 
   const approveRequest = async (id) => {
     try {
-      await axios.put(`http://localhost:8080/api/admin/inventory/${id}/approve`);
+      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/inventory/${id}/approve`);
       fetchRequests();
     } catch(e) { alert('Lỗi duyệt'); }
   }
 
   const rejectRequest = async (id) => {
     try {
-      await axios.put(`http://localhost:8080/api/admin/inventory/${id}/reject`);
+      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/inventory/${id}/reject`);
       fetchRequests();
     } catch(e) { alert('Lỗi từ chối'); }
   }
