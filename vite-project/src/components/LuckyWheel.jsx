@@ -43,6 +43,7 @@ const LuckyWheel = () => {
   const [questImage, setQuestImage] = useState(null);
   const [questNote, setQuestNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
   useEffect(() => {
     if (!username) {
@@ -63,13 +64,15 @@ const LuckyWheel = () => {
       setSpinsLeft(userData.spins);
       setMiniPoints(userData.miniGamePoints || 0);
 
-      // Tự động mở lại trò chơi nếu người dùng chưa chơi xong (do F5...)
-      if (!isSpinning) {
+      // Chỉ tự động mở lại DUY NHẤT 1 lần khi người dùng mới vào trang (F5)
+      if (!isSpinning && !hasAutoOpened) {
         if (userData.pendingMiniGame > 0) {
           setIsMiniGameOpen(true);
           setIsPractice(false);
+          setHasAutoOpened(true); // Đã mở, khóa lại
         } else if (userData.pendingSlotMachine > 0) {
           setIsSlotMachineOpen(true);
+          setHasAutoOpened(true); // Đã mở, khóa lại
         }
       }
 
@@ -91,8 +94,10 @@ const LuckyWheel = () => {
       if (prize === 'Mini game') {
         setIsMiniGameOpen(true);
         setIsPractice(false);
+        setPrize(null); // Reset để không bị trigger lại bởi useEffect
       } else if (prize === 'Slot Machine') {
         setIsSlotMachineOpen(true);
+        setPrize(null); // Reset để không bị trigger lại bởi useEffect
       }
     }
   }, [isSpinning, prize]);
