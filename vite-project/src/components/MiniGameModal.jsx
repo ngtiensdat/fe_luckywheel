@@ -54,8 +54,82 @@ const MiniGameModal = ({ isOpen, onClose, username, fetchInventory, fetchHistory
 
   // Block Blast deleted
 
-  // General 
+  // Memory Game State...
+  // Cups Game State
+  const [cups, setCups] = useState([0, 1, 2]); // Indices
+  const [duckPos, setDuckPos] = useState(1); // Index where duck is
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffleTimeLeft, setShuffleTimeLeft] = useState(10);
+  const [revealed, setRevealed] = useState(false);
+  const [cupsGameOver, setCupsGameOver] = useState(false);
+
+  // General...
   const [rewardClaimed, setRewardClaimed] = useState(false);
+
+  // --- CUPS GAME LOGIC ---
+  const startCupsGame = () => {
+    setCups([0, 1, 2].sort(() => Math.random() - 0.5)); // Ngẫu nhiên vị trí khởi đầu của bát
+    setDuckPos(Math.floor(Math.random() * 3));
+    setIsShuffling(false);
+    setRevealed(true); // QUAN TRỌNG: Hiện vịt cho người chơi thấy trước
+    setCupsGameOver(false);
+    setShuffleTimeLeft(10);
+    setIsReady(true);
+  };
+
+  const startShuffling = () => {
+    setIsShuffling(true);
+    setRevealed(false);
+    let time = 10;
+    const speed = difficulty === 'easy' ? 800 : difficulty === 'medium' ? 500 : 300;
+    
+    // Shuffle interval
+    const shuffleInterval = setInterval(() => {
+      setCups(prev => {
+        const next = [...prev];
+        const idx1 = Math.floor(Math.random() * 3);
+        let idx2 = Math.floor(Math.random() * 3);
+        while(idx1 === idx2) idx2 = Math.floor(Math.random() * 3);
+        [next[idx1], next[idx2]] = [next[idx2], next[idx1]];
+        return next;
+      });
+    }, speed);
+
+    // Timer interval
+    const timerInterval = setInterval(() => {
+      time -= 1;
+      setShuffleTimeLeft(time);
+      if (time <= 0) {
+        clearInterval(shuffleInterval);
+        clearInterval(timerInterval);
+        setIsShuffling(false);
+      }
+    }, 1000);
+  };
+
+  const handleCupClick = (idx) => {
+    if (isShuffling || revealed || cupsGameOver) return;
+    setRevealed(true);
+    setCupsGameOver(true);
+    setIsGameFinished(true);
+    
+    const isWin = (idx === duckPos);
+    if (isWin) {
+      playSound('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+      if (!rewardClaimed) {
+        setRewardClaimed(true);
+        addMiniGamePoints(15);
+        saveRecord('Tìm Vị', 100);
+      }
+    } else {
+      if (!rewardClaimed) {
+        setRewardClaimed(true);
+        saveRecord('Tìm Vị', 0);
+      }
+    }
+  };
+
+  // ... (giữ nguyên phần còn lại) ...
 
   useEffect(() => {
     if (isOpen) {
@@ -486,10 +560,10 @@ const MiniGameModal = ({ isOpen, onClose, username, fetchInventory, fetchHistory
         {selectedGame && !isReady && (
           <div style={{ padding: '2rem', textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>
-              {selectedGame === 'snake' ? '🐍' : selectedGame === 'guess' ? '🔢' : selectedGame === 'mole' ? '🔨' : '🎴'}
+              {selectedGame === 'snake' ? '🐍' : selectedGame === 'guess' ? '🔢' : selectedGame === 'mole' ? '🔨' : selectedGame === 'cups' ? '🦆' : '🎴'}
             </div>
             <h2 style={{ color: '#fff', marginBottom: '1rem' }}>
-              {selectedGame === 'snake' ? 'Rắn Săn Mồi' : selectedGame === 'guess' ? 'Đoán Số' : selectedGame === 'mole' ? 'Đập Chuột' : 'Lật Thẻ Bài'}
+              {selectedGame === 'snake' ? 'Rắn Săn Mồi' : selectedGame === 'guess' ? 'Đoán Số' : selectedGame === 'mole' ? 'Đập Chuột' : selectedGame === 'cups' ? 'Thử Thách Tìm Vịt' : 'Lật Thẻ Bài'}
             </h2>
             <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Bạn đã sẵn sàng chưa?</p>
             <button 
@@ -502,6 +576,7 @@ const MiniGameModal = ({ isOpen, onClose, username, fetchInventory, fetchHistory
                   else if (selectedGame === 'guess') startGuessGame();
                   else if (selectedGame === 'mole') startMoleGame();
                   else if (selectedGame === 'memory') startMemoryGame();
+                  else if (selectedGame === 'cups') startCupsGame();
                 } catch(e) {
                   alert("Lỗi lượt chơi!");
                   onClose();
@@ -546,6 +621,14 @@ const MiniGameModal = ({ isOpen, onClose, username, fetchInventory, fetchHistory
               onClick={() => { setSelectedGame('memory'); }}
             >
               🎴 Lật Thẻ Bài Trí Tuệ
+            </button>
+
+            <button 
+              className="login-btn" 
+              style={{ width: '100%', background: 'linear-gradient(to right, #fbbf24, #d97706)', padding: '1rem', borderRadius: '12px', fontSize: '1.2rem', gap: '10px', marginBottom: '1rem', border: 'none', color: '#fff', cursor: 'pointer' }}
+              onClick={() => { setSelectedGame('cups'); }}
+            >
+              🦆 Thử Thách Tìm Vịt
             </button>
           </div>
         )}
@@ -773,7 +856,82 @@ const MiniGameModal = ({ isOpen, onClose, username, fetchInventory, fetchHistory
           </div>
         )}
 
-        {/* BlockBlast Deleted */}
+        {/* --- CUPS GAME VIEW --- */}
+        {selectedGame === 'cups' && isReady && (
+          <div>
+            <h2 style={{ color: '#fbbf24', marginBottom: '0.5rem' }}>🦆 Thử Thách Tìm Vịt</h2>
+            <p style={{ color: '#94a3b8', marginBottom: '1rem' }}>
+              {isShuffling ? `Đang xáo trộn: ${shuffleTimeLeft}s` : (revealed && !cupsGameOver ? 'Hãy nhớ vị trí con vịt!' : (revealed ? 'Kết quả!' : 'Tìm con vịt!'))}
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '25px', height: '160px', alignItems: 'flex-end', marginBottom: '1.5rem', position: 'relative' }}>
+              {[0, 1, 2].map(posIdx => {
+                const cupIdx = cups[posIdx];
+                const hasDuck = (cupIdx === duckPos);
+                // Hiệu ứng nhấc bát lên khi đang ở mode hiển thị trước hoặc kết thúc
+                const isLifted = revealed && hasDuck; 
+
+                return (
+                  <motion.div 
+                    key={cupIdx}
+                    layout
+                    transition={{ type: 'spring', stiffness: 250, damping: 20 }}
+                    onClick={() => handleCupClick(cupIdx)}
+                    style={{ position: 'relative', cursor: (isShuffling || revealed) ? 'default' : 'pointer' }}
+                  >
+                     {/* Duck inside */}
+                     <AnimatePresence>
+                        {hasDuck && (
+                          <div style={{ 
+                            fontSize: '3rem', 
+                            position: 'absolute', 
+                            bottom: '10px', 
+                            left: '10px', 
+                            zIndex: 1,
+                            opacity: (revealed && hasDuck) ? 1 : 0,
+                            transition: 'opacity 0.3s'
+                          }}>🦆</div>
+                        )}
+                     </AnimatePresence>
+
+                     {/* The Cup/Bowl (Now Upside Down) */}
+                     <motion.div
+                       animate={{ y: isLifted ? -70 : 0 }}
+                       style={{ 
+                          width: '80px', 
+                          height: '70px', 
+                          background: '#475569', 
+                          borderRadius: '40px 40px 4px 4px', // Round top, flat bottom
+                          border: '4px solid #334155',
+                          position: 'relative',
+                          zIndex: 2,
+                          boxShadow: isLifted ? '0 20px 25px rgba(0,0,0,0.5)' : '0 5px 10px rgba(0,0,0,0.3)'
+                       }}
+                     >
+                        {/* Lip of the bowl at the bottom */}
+                        <div style={{ width: 'calc(100% + 12px)', height: '8px', background: '#1e293b', position: 'absolute', bottom: '-4px', left: '-6px', borderRadius: '4px' }}></div>
+                     </motion.div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {!isShuffling && !cupsGameOver && revealed && (
+              <button 
+                onClick={startShuffling}
+                style={{ width: '100%', padding: '1rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 5px 15px rgba(16,185,129,0.3)' }}
+              >
+                BẮT ĐẦU XÁO TRỘN
+              </button>
+            )}
+
+            {revealed && cupsGameOver && (
+              <div style={{ marginTop: '1rem' }}>
+                 <button onClick={onClose} style={{ width: '100%', padding: '12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>XÁC NHẬN & ĐÓNG</button>
+              </div>
+            )}
+          </div>
+        )}
       </motion.div>
     </div>
   );
