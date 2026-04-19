@@ -17,6 +17,10 @@ const AdminPanel = () => {
   const [newUser, setNewUser] = useState({ username: '', password: '', spins: 0 });
   const [showAddForm, setShowAddForm] = useState(false);
 
+  // New states for Daily Quests
+  const [dailyQuests, setDailyQuests] = useState([]);
+  const [selectedQuestImage, setSelectedQuestImage] = useState(null);
+
   const fetchUsers = async () => {
     try {
       const res = await axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/users');
@@ -31,12 +35,20 @@ const AdminPanel = () => {
     } catch(e) { console.error(e); }
   };
 
+  const fetchDailyQuests = async () => {
+    try {
+      const res = await axios.get(import.meta.env.VITE_API_BASE_URL + '/api/quests/admin/pending');
+      setDailyQuests(res.data);
+    } catch(e) { console.error(e); }
+  };
+
   useEffect(() => {
     if (localStorage.getItem('username') !== 'admin') {
       navigate('/login');
     } else {
       fetchUsers();
       fetchRequests();
+      fetchDailyQuests();
     }
   }, []);
 
@@ -90,6 +102,22 @@ const AdminPanel = () => {
     } catch(e) { alert('Lỗi từ chối'); }
   }
 
+  const approveDailyQuest = async (id) => {
+    try {
+      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/quests/admin/approve/${id}`);
+      fetchDailyQuests();
+      alert("Đã duyệt nhiệm vụ!");
+    } catch(e) { alert("Lỗi duyệt"); }
+  };
+
+  const rejectDailyQuest = async (id) => {
+    try {
+      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/quests/admin/reject/${id}`);
+      fetchDailyQuests();
+      alert("Đã từ chối nhiệm vụ!");
+    } catch(e) { alert("Lỗi từ chối"); }
+  };
+
   const filteredUsers = users.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()));
 
   return (
@@ -129,6 +157,40 @@ const AdminPanel = () => {
               </div>
             ))}
             {requests.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center' }}>Không có yêu cầu nào.</div>}
+          </div>
+        </div>
+
+        {/* --- DUYỆT NHIỆM VỤ ẢNH --- */}
+        <div className="glass-card" style={{ flex: '1', minWidth: '300px', padding: '1.5rem', alignSelf: 'flex-start' }}>
+          <h2 style={{ color: '#f59e0b', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+            📸 Duyệt ảnh nhiệm vụ ({dailyQuests.length})
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
+            {dailyQuests.map(q => (
+              <div key={q.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ color: '#60a5fa' }}>{q.user.username}</strong>
+                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                        {q.questType === 'BREAKFAST' ? 'Sáng' : q.questType === 'LUNCH' ? 'Trưa' : 'Tối'}
+                    </span>
+                </div>
+                
+                <img 
+                    src={q.imageData} 
+                    alt="quest" 
+                    onClick={() => setSelectedQuestImage(q.imageData)}
+                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', cursor: 'zoom-in' }} 
+                />
+                
+                {q.note && <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>"{q.note}"</div>}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => approveDailyQuest(q.id)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}>Duyệt</button>
+                  <button onClick={() => rejectDailyQuest(q.id)} style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}>Từ chối</button>
+                </div>
+              </div>
+            ))}
+            {dailyQuests.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center' }}>Chưa có ảnh nào cần duyệt.</div>}
           </div>
         </div>
 
@@ -192,6 +254,16 @@ const AdminPanel = () => {
         </div>
 
       </div>
+
+      {/* --- Ảnh phóng to --- tobacco */}
+      {selectedQuestImage && (
+        <div 
+          onClick={() => setSelectedQuestImage(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <img src={selectedQuestImage} alt="Large" style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '10px', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }} />
+          <div style={{ position: 'absolute', top: '20px', right: '20px', color: '#fff', fontSize: '2rem', cursor: 'pointer' }}>&times;</div>
+        </div>
+      )}
     </div>
   );
 };
