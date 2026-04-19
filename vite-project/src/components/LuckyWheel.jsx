@@ -57,22 +57,23 @@ const LuckyWheel = () => {
 
   const fetchData = async () => {
     try {
-      const [u, inv, hist, rec, ci, ds] = await Promise.all([
-        axios.get(import.meta.env.VITE_API_BASE_URL + `/api/users/${username}`),
-        axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/inventory/${username}`),
-        axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/history/${username}`),
-        axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/records/${username}`),
-        axios.get(import.meta.env.VITE_API_BASE_URL + `/api/quests/checkin/status/${username}`),
-        axios.get(import.meta.env.VITE_API_BASE_URL + `/api/quests/daily-status/${username}`)
-      ]);
+      // Ưu tiên số 1: Lấy lượt quay và thông tin user
+      const u = await axios.get(import.meta.env.VITE_API_BASE_URL + `/api/users/${username}`);
       setSpinsLeft(u.data.spins);
       setMiniPoints(u.data.miniGamePoints || 0);
-      setInventory(inv.data);
-      setHistory(hist.data);
-      setRecords(rec.data);
-      setCheckInInfo(ci.data);
-      setDailyStatus(ds.data);
-    } catch (e) {}
+
+      // Các dữ liệu phụ: Lấy độc lập, lỗi cái này không ảnh hưởng cái kia
+      axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/inventory/${username}`).then(res => setInventory(res.data)).catch(() => {});
+      axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/history/${username}`).then(res => setHistory(res.data)).catch(() => {});
+      axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/records/${username}`).then(res => setRecords(res.data)).catch(() => {});
+      
+      // Quan trọng: Thêm tiền tố api nếu cần (kiểm tra lại QuestController mapping)
+      axios.get(import.meta.env.VITE_API_BASE_URL + `/api/quests/checkin/status/${username}`).then(res => setCheckInInfo(res.data)).catch(() => {});
+      axios.get(import.meta.env.VITE_API_BASE_URL + `/api/quests/daily-status/${username}`).then(res => setDailyStatus(res.data)).catch(() => {});
+      
+    } catch (e) {
+      console.error("Lỗi lấy thông tin người dùng:", e);
+    }
   };
 
   const spinWheel = async () => {

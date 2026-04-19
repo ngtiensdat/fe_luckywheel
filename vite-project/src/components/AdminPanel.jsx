@@ -19,7 +19,7 @@ const AdminPanel = () => {
     const fetchAll = async () => {
         try {
             const [u, r, q] = await Promise.all([
-                axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/users'),
+                axios.get(import.meta.env.VITE_API_BASE_URL + '/api/users/admin/users'),
                 axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/inventory/requests'),
                 axios.get(import.meta.env.VITE_API_BASE_URL + '/api/quests/admin/pending')
             ]);
