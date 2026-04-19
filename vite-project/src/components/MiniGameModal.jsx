@@ -473,7 +473,7 @@ const MiniGameModal = ({ isOpen, onClose, username, fetchInventory, fetchHistory
         )}
 
         {!selectedGame && (
-          <div style={{ padding: '0 1.5rem', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '10px 15px', marginBottom: '1rem' }}>
+          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '10px 15px', marginBottom: '1rem' }}>
             <span style={{ color: '#94a3b8' }}>Độ khó:</span>
             <select value={difficulty} onChange={e => setDifficulty(e.target.value)} style={{ background: '#1e293b', color: '#fff', border: '1px solid #334155', padding: '5px', borderRadius: '4px', outline: 'none' }}>
               <option value="easy">Dễ</option>
