@@ -40,8 +40,19 @@ const Login = () => {
         alert('Đăng nhập thất bại: ' + (error.response.data || 'Thông tin không chính xác'));
       } else {
         console.error('Lỗi kết nối Backend:', error);
-        alert('Không thể kết nối tới Server Java. Hãy đảm bảo bạn đã chạy dự án trong IntelliJ!');
+        alert('Không thể kết nối tới máy chủ. Vui lòng thử lại sau giây lát!');
       }
+    }
+  };
+
+  const handleRegisterRedirect = (e) => {
+    e.preventDefault();
+    const username = prompt("Nhập tên đăng nhập mới:");
+    const password = prompt("Nhập mật khẩu mới:");
+    if (username && password) {
+      axios.post(import.meta.env.VITE_API_BASE_URL + '/api/users/register', { username, password })
+        .then(() => alert("Đăng ký thành công! Hãy đăng nhập ngay."))
+        .catch(err => alert("Lỗi: " + (err.response?.data || "Không thể đăng ký")));
     }
   };
 
@@ -57,18 +68,18 @@ const Login = () => {
         className="glass-card"
       >
         <div className="header">
-          <h1>Welcome Back</h1>
-          <p>Please enter your details to sign in</p>
+          <h1>Chào Mừng Trở Lại</h1>
+          <p>Vui lòng nhập thông tin để bắt đầu</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
-            <label>Username or Email</label>
+            <label>Tên đăng nhập</label>
             <div className="input-wrapper">
               <User size={18} />
               <input 
                 type="text" 
-                placeholder="Enter your username"
+                placeholder="Nhập tên tài khoản"
                 value={formData.username}
                 onChange={(e) => setFormData({...formData, username: e.target.value})}
                 required
@@ -77,7 +88,7 @@ const Login = () => {
           </div>
 
           <div className="input-group">
-            <label>Password</label>
+            <label>Mật khẩu</label>
             <div className="input-wrapper">
               <Lock size={18} />
               <input 
@@ -96,12 +107,12 @@ const Login = () => {
             className="login-btn"
             type="submit"
           >
-            Sign In <ArrowRight size={18} style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+            Đăng Nhập <ArrowRight size={18} style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
           </motion.button>
         </form>
 
         <div className="footer-text">
-          <p>Don't have an account? <a href="#">Create account</a></p>
+          <p>Chưa có tài khoản? <a href="#" onClick={handleRegisterRedirect}>Đăng ký ngay</a></p>
         </div>
       </motion.div>
     </div>
