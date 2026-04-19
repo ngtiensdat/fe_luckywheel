@@ -187,7 +187,16 @@ const LuckyWheel = () => {
                   return (
                     <g key={i}>
                       <path d={`M 150 150 L ${150 + 150 * Math.cos(i * angle * Math.PI / 180)} ${150 + 150 * Math.sin(i * angle * Math.PI / 180)} A 150 150 0 0 1 ${150 + 150 * Math.cos((i + 1) * angle * Math.PI / 180)} ${150 + 150 * Math.sin((i + 1) * angle * Math.PI / 180)} Z`} fill={p.color} stroke="rgba(255,255,255,0.2)" />
-                      <text x={150 + 110 * Math.cos(textAngle * Math.PI / 180)} y={150 + 110 * Math.sin(textAngle * Math.PI / 180)} fill="white" fontSize="11" fontWeight="bold" textAnchor="middle" transform={`rotate(${textAngle + 90}, ${150 + 110 * Math.cos(textAngle * Math.PI / 180)}, ${150 + 110 * Math.sin(textAngle * Math.PI / 180)})`}>
+                      <text 
+                        x={150 + 95 * Math.cos(textAngle * Math.PI / 180)} 
+                        y={150 + 95 * Math.sin(textAngle * Math.PI / 180)} 
+                        fill="white" 
+                        fontSize="14" 
+                        fontWeight="bold" 
+                        textAnchor="middle" 
+                        transform={`rotate(${textAngle}, ${150 + 95 * Math.cos(textAngle * Math.PI / 180)}, ${150 + 95 * Math.sin(textAngle * Math.PI / 180)})`}
+                        style={{ textShadow: '0px 2px 4px rgba(0,0,0,0.8)' }}
+                      >
                         {p.text}
                       </text>
                     </g>
