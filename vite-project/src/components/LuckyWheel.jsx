@@ -363,7 +363,7 @@ const LuckyWheel = () => {
       </div>
 
       {/* --- RIGHT PANEL (Records & Requests) --- */}
-      <div className="right-panel hide-mobile">
+      <div className="right-panel">
         <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h3 style={{ color: '#60a5fa', textAlign: 'center', margin: 0 }}>🌟 Thanh Năng Lượng 🌟</h3>
           <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>Đạt 100 điểm để nhận Rương Báu!</p>

@@ -255,13 +255,14 @@ body {
 }
 
 .right-panel {
-  width: 350px;
+  width: 380px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   padding: 2rem;
   height: 100vh;
-  justify-content: center;
+  justify-content: flex-start; /* Để các card bắt đầu từ trên xuống */
+  padding-top: 6rem; /* Chừa chỗ cho Top Bar */
 }
 
 .record-board, .requests-board {
@@ -506,18 +507,21 @@ body {
 
 @media (max-width: 1024px) {
   .wheel-layout {
-    flex-direction: column;
-    overflow-y: auto;
+    flex-direction: column; /* Xếp chồng: Vòng quay trên, Bảng dưới */
+    height: auto;
+    max-height: none;
+    padding-top: 5rem;
   }
   .wheel-page {
-    /* Đảm bảo wheel không bị đè lên các bên */
-    margin: 2rem 0;
     width: 100%;
+    margin-bottom: 1rem;
+    padding: 1rem;
   }
   .right-panel {
     width: 100%;
     height: auto;
     padding: 1rem;
+    padding-top: 0;
   }
 }
 
