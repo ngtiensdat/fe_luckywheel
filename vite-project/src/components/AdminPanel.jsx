@@ -14,6 +14,7 @@ const AdminPanel = () => {
     // Filter State
     const [selectedUser, setSelectedUser] = useState(null); // The full user object
     const [selectedQuestImage, setSelectedQuestImage] = useState(null);
+    const [editSpins, setEditSpins] = useState(0);
 
     const fetchAll = async () => {
         try {
@@ -25,6 +26,13 @@ const AdminPanel = () => {
             setUsers(u.data);
             setRequests(r.data.filter(x => x.status === 'Đang chờ duyệt'));
             setDailyQuests(q.data);
+            if (selectedUser) {
+                const updated = u.data.find(x => x.id === selectedUser.id);
+                if (updated) {
+                    setSelectedUser(updated);
+                    setEditSpins(updated.spins);
+                }
+            }
         } catch(e) { console.error(e); }
     };
 
@@ -32,6 +40,14 @@ const AdminPanel = () => {
         if (localStorage.getItem('username') !== 'admin') navigate('/login');
         else fetchAll();
     }, []);
+
+    const updateSpins = async () => {
+        try {
+            await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/users/${selectedUser.username}/spins`, { spins: editSpins });
+            alert("Đã cập nhật lượt quay!");
+            fetchAll();
+        } catch(e) { alert("Lỗi cập nhật lượt quay"); }
+    };
 
     const approveGift = async (id) => {
         try {
@@ -85,6 +101,21 @@ const AdminPanel = () => {
 
                         {selectedUser && (
                             <>
+                                {/* Phần chỉnh sửa lượt quay */}
+                                <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '15px', borderRadius: '10px', marginBottom: '20px', border: '1px solid #3b82f6' }}>
+                                    <h4 style={{ margin: '0 0 10px 0', color: '#fff' }}>Chỉnh sửa lượt quay</h4>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input 
+                                            type="number" 
+                                            value={editSpins}
+                                            onChange={e => setEditSpins(parseInt(e.target.value) || 0)}
+                                            style={{ flex: 1, padding: '8px', borderRadius: '6px', background: '#0f172a', border: '1px solid #334155', color: '#fff' }}
+                                        />
+                                        <button onClick={updateSpins} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold' }}>Cập nhật</button>
+                                    </div>
+                                    <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Hiện có: {selectedUser.spins} lượt</p>
+                                </div>
+
                                 {/* Quà tặng */}
                                 <h4 style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><Package size={18} /> Quà tặng chờ duyệt ({userGifts.length})</h4>
                                 {userGifts.map(g => (
