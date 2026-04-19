@@ -1,279 +1,170 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { LogOut, Check, X, Trash2, Edit2, RotateCcw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { LogOut, Check, X, Trash2, Edit2, RotateCcw, User, Package, Trophy } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
-  const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [searchUser, setSearchUser] = useState('');
+    const navigate = useNavigate();
+    const [users, setUsers] = useState([]);
+    const [requests, setRequests] = useState([]); // All gift requests
+    const [dailyQuests, setDailyQuests] = useState([]); // All quest images
+    const [searchUser, setSearchUser] = useState('');
+    
+    // Filter State
+    const [selectedUser, setSelectedUser] = useState(null); // The full user object
+    const [selectedQuestImage, setSelectedQuestImage] = useState(null);
 
-  const [editUser, setEditUser] = useState(null);
-  const [newSpins, setNewSpins] = useState(0);
+    const fetchAll = async () => {
+        try {
+            const [u, r, q] = await Promise.all([
+                axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/users'),
+                axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/inventory/requests'),
+                axios.get(import.meta.env.VITE_API_BASE_URL + '/api/quests/admin/pending')
+            ]);
+            setUsers(u.data);
+            setRequests(r.data.filter(x => x.status === 'Đang chờ duyệt'));
+            setDailyQuests(q.data);
+        } catch(e) { console.error(e); }
+    };
 
-  // New user state
-  const [newUser, setNewUser] = useState({ username: '', password: '', spins: 0 });
-  const [showAddForm, setShowAddForm] = useState(false);
+    useEffect(() => {
+        if (localStorage.getItem('username') !== 'admin') navigate('/login');
+        else fetchAll();
+    }, []);
 
-  // New states for Daily Quests
-  const [dailyQuests, setDailyQuests] = useState([]);
-  const [selectedQuestImage, setSelectedQuestImage] = useState(null);
+    const approveGift = async (id) => {
+        try {
+            await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/inventory/${id}/approve`);
+            fetchAll();
+        } catch(e) { alert("Lỗi duyệt quà"); }
+    };
 
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/users');
-      setUsers(res.data);
-    } catch(e) { console.error(e); }
-  };
+    const approveQuest = async (id) => {
+        try {
+            await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/quests/admin/approve/${id}`);
+            fetchAll();
+        } catch(e) { alert("Lỗi duyệt ảnh"); }
+    };
 
-  const fetchRequests = async () => {
-    try {
-      const res = await axios.get(import.meta.env.VITE_API_BASE_URL + '/api/admin/inventory/requests');
-      setRequests(res.data.filter(r => r.status === 'Đang chờ duyệt'));
-    } catch(e) { console.error(e); }
-  };
+    const filteredUsers = users.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()));
+    
+    // Dynamic lists for the selected user
+    const userGifts = requests.filter(r => r.username === selectedUser?.username);
+    const userQuests = dailyQuests.filter(q => q.user.username === selectedUser?.username);
 
-  const fetchDailyQuests = async () => {
-    try {
-      const res = await axios.get(import.meta.env.VITE_API_BASE_URL + '/api/quests/admin/pending');
-      setDailyQuests(res.data);
-    } catch(e) { console.error(e); }
-  };
-
-  useEffect(() => {
-    if (localStorage.getItem('username') !== 'admin') {
-      navigate('/login');
-    } else {
-      fetchUsers();
-      fetchRequests();
-      fetchDailyQuests();
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
-  };
-
-  const deleteUser = async (id) => {
-    if(window.confirm('Chắc chắn xóa người dùng này?')) {
-      try {
-        await axios.delete(import.meta.env.VITE_API_BASE_URL + `/api/admin/users/${id}`);
-        fetchUsers();
-      } catch(e) { alert('Lỗi xóa'); }
-    }
-  };
-
-  const updateSpins = async (id, currentSpins) => {
-    try {
-      const u = users.find(x => x.id === id);
-      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/users/${id}`, {
-        ...u,
-        spins: newSpins
-      });
-      setEditUser(null);
-      fetchUsers();
-    } catch(e) { alert('Lỗi cập nhật'); }
-  };
-
-  const createUser = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(import.meta.env.VITE_API_BASE_URL + '/api/admin/users', newUser);
-      setNewUser({ username: '', password: '', spins: 0 });
-      setShowAddForm(false);
-      fetchUsers();
-    } catch(e) { alert('Lỗi tạo mới'); }
-  };
-
-  const approveRequest = async (id) => {
-    try {
-      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/inventory/${id}/approve`);
-      fetchRequests();
-    } catch(e) { alert('Lỗi duyệt'); }
-  }
-
-  const rejectRequest = async (id) => {
-    try {
-      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/admin/inventory/${id}/reject`);
-      fetchRequests();
-    } catch(e) { alert('Lỗi từ chối'); }
-  }
-
-  const approveDailyQuest = async (id) => {
-    try {
-      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/quests/admin/approve/${id}`);
-      fetchDailyQuests();
-      alert("Đã duyệt nhiệm vụ!");
-    } catch(e) { alert("Lỗi duyệt"); }
-  };
-
-  const rejectDailyQuest = async (id) => {
-    try {
-      await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/quests/admin/reject/${id}`);
-      fetchDailyQuests();
-      alert("Đã từ chối nhiệm vụ!");
-    } catch(e) { alert("Lỗi từ chối"); }
-  };
-
-  const filteredUsers = users.filter(u => u.username.toLowerCase().includes(searchUser.toLowerCase()));
-
-  return (
-    <div className="wheel-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto', padding: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1000px', margin: '0 auto 2rem auto' }}>
-        <h1 style={{ fontSize: '2.5rem', background: 'linear-gradient(to right, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Admin Panel
-        </h1>
-        <button className="logout-btn" onClick={handleLogout} style={{ border: '1px solid #ef4444', color: '#ef4444' }}>
-          <LogOut size={16} /> Đăng xuất
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', gap: '2rem', maxWidth: '1000px', width: '100%', margin: '0 auto', flexWrap: 'wrap' }}>
-        
-        {/* --- YÊU CẦU DUYỆT --- */}
-        <div className="glass-card" style={{ flex: '1', minWidth: '300px', padding: '1.5rem', alignSelf: 'flex-start' }}>
-          <h2 style={{ color: '#10b981', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-            📦 Yêu cầu duyệt quà ({requests.length})
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto' }}>
-            {requests.map(req => (
-              <div key={req.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong style={{ color: '#60a5fa' }}>{req.username}</strong>
-                  <span style={{ color: '#f59e0b', fontSize: '0.8rem' }}>Đang chờ</span>
-                </div>
-                <div style={{ color: '#fff' }}>Vật phẩm: {req.itemName}</div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
-                  <button onClick={() => approveRequest(req.id)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}>
-                    <Check size={16} /> Duyệt
-                  </button>
-                  <button onClick={() => rejectRequest(req.id)} style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}>
-                    <X size={16} /> Từ chối
-                  </button>
-                </div>
-              </div>
-            ))}
-            {requests.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center' }}>Không có yêu cầu nào.</div>}
-          </div>
-        </div>
-
-        {/* --- DUYỆT NHIỆM VỤ ẢNH --- */}
-        <div className="glass-card" style={{ flex: '1', minWidth: '300px', padding: '1.5rem', alignSelf: 'flex-start' }}>
-          <h2 style={{ color: '#f59e0b', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-            📸 Duyệt ảnh nhiệm vụ ({dailyQuests.length})
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
-            {dailyQuests.map(q => (
-              <div key={q.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ color: '#60a5fa' }}>{q.user.username}</strong>
-                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '2px 8px', borderRadius: '10px' }}>
-                        {q.questType === 'BREAKFAST' ? 'Sáng' : q.questType === 'LUNCH' ? 'Trưa' : 'Tối'}
-                    </span>
-                </div>
-                
-                <img 
-                    src={q.imageData} 
-                    alt="quest" 
-                    onClick={() => setSelectedQuestImage(q.imageData)}
-                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', cursor: 'zoom-in' }} 
-                />
-                
-                {q.note && <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>"{q.note}"</div>}
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={() => approveDailyQuest(q.id)} style={{ flex: 1, background: '#10b981', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}>Duyệt</button>
-                  <button onClick={() => rejectDailyQuest(q.id)} style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', padding: '6px', borderRadius: '4px', cursor: 'pointer' }}>Từ chối</button>
-                </div>
-              </div>
-            ))}
-            {dailyQuests.length === 0 && <div style={{ color: '#94a3b8', textAlign: 'center' }}>Chưa có ảnh nào cần duyệt.</div>}
-          </div>
-        </div>
-
-        {/* --- QUẢN LÝ NGƯỜI DÙNG --- */}
-        <div className="glass-card" style={{ flex: '2', minWidth: '350px', padding: '1.5rem', alignSelf: 'flex-start' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-            <h2 style={{ color: '#a78bfa', margin: 0 }}>👥 Người chơi ({users.length})</h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" 
-                placeholder="Tìm user..." 
-                value={searchUser}
-                onChange={e => setSearchUser(e.target.value)}
-                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #334155', color: '#fff', padding: '5px 10px', borderRadius: '6px', outline: 'none' }}
-              />
-              <button 
-                onClick={() => setShowAddForm(!showAddForm)}
-                style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-                {showAddForm ? 'Hủy' : '+ Thêm'}
-              </button>
+    return (
+        <div className="wheel-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+            {/* Header */}
+            <div className="top-bar" style={{ position: 'relative', margin: '1rem', padding: '0 1rem' }}>
+                <h2 style={{ color: '#fbbf24' }}>Quản Trị LuckyWheel</h2>
+                <div className="spacer" />
+                <button className="logout-btn" onClick={() => { localStorage.clear(); navigate('/login'); }}>
+                    <LogOut size={16} /> Đăng xuất
+                </button>
             </div>
-          </div>
 
-          {showAddForm && (
-            <form onSubmit={createUser} style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <h3 style={{ margin: 0, color: '#60a5fa' }}>Thêm tài khoản cấp phép</h3>
-              <input type="text" required placeholder="Tên đăng nhập" value={newUser.username} onChange={e=>setNewUser({...newUser, username: e.target.value})} style={inputStyle} />
-              <input type="password" required placeholder="Mật khẩu" value={newUser.password} onChange={e=>setNewUser({...newUser, password: e.target.value})} style={inputStyle} />
-              <input type="number" required placeholder="Số lượt quay ban đầu" value={newUser.spins} onChange={e=>setNewUser({...newUser, spins: Number(e.target.value)})} style={inputStyle} />
-              <button type="submit" style={{ background: '#10b981', color: '#fff', padding: '8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                Tạo tài khoản mới
-              </button>
-            </form>
-          )}
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '500px', overflowY: 'auto' }}>
-            {filteredUsers.map(u => (
-              <div key={u.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{u.username}</div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Lượt quay: 
-                    {editUser === u.id ? (
-                      <input type="number" value={newSpins} onChange={e=>setNewSpins(e.target.value)} style={{ width: '50px', marginLeft: '5px', background: 'transparent', color: '#fff', border: '1px solid #60a5fa', padding: '2px 5px', borderRadius: '4px' }} />
-                    ) : (
-                      <strong style={{ color: '#60a5fa', marginLeft: '5px' }}>{u.spins}</strong>
-                    )}
-                  </div>
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden', padding: '1rem', gap: '1rem' }}>
+                {/* Left: Detail Panel for Selected User */}
+                <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div className="panel-header" style={{ background: 'rgba(59, 130, 246, 0.1)' }}>
+                        {selectedUser ? (
+                            <h3 style={{ margin: 0 }}>Duyệt cho: <span style={{ color: '#60a5fa' }}>{selectedUser.username}</span></h3>
+                        ) : (
+                            <h3 style={{ margin: 0, color: '#94a3b8' }}>Chọn một người để duyệt</h3>
+                        )}
+                    </div>
+                    
+                    <div className="panel-content" style={{ padding: '1rem', overflowY: 'auto' }}>
+                        {!selectedUser && (
+                            <div style={{ textAlign: 'center', marginTop: '5rem', color: '#475569' }}>
+                                <User size={64} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                                <p>Hãy chọn một người dùng từ danh sách bên phải <br/> để xem yêu cầu của họ.</p>
+                            </div>
+                        )}
+
+                        {selectedUser && (
+                            <>
+                                {/* Quà tặng */}
+                                <h4 style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><Package size={18} /> Quà tặng chờ duyệt ({userGifts.length})</h4>
+                                {userGifts.map(g => (
+                                    <div key={g.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span>{g.itemName}</span>
+                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                            <button onClick={() => approveGift(g.id)} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px' }}>Duyệt</button>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div style={{ height: '1px', background: '#334155', margin: '20px 0' }} />
+
+                                {/* Nhiệm vụ */}
+                                <h4 style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}><Trophy size={18} /> Nhiệm vụ ảnh ({userQuests.length})</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
+                                    {userQuests.map(q => (
+                                        <div key={q.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '5px', borderRadius: '8px', textAlign: 'center' }}>
+                                            <img 
+                                                src={q.imageData} 
+                                                onClick={() => setSelectedQuestImage(q.imageData)}
+                                                style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '5px', cursor: 'zoom-in' }} 
+                                            />
+                                            <div style={{ fontSize: '0.7rem', margin: '5px 0' }}>{q.questType}</div>
+                                            <button onClick={() => approveQuest(q.id)} style={{ width: '100%', background: '#10b981', border: 'none', color: '#fff', padding: '2px', borderRadius: '4px', fontSize: '0.75rem' }}>Duyệt</button>
+                                        </div>
+                                    ))}
+                                </div>
+                                {userQuests.length === 0 && userGifts.length === 0 && <p style={{ textAlign: 'center', color: '#475569' }}>Người này không có yêu cầu nào.</p>}
+                            </>
+                        )}
+                    </div>
                 </div>
-                
-                <div style={{ display: 'flex', gap: '5px' }}>
-                  {editUser === u.id ? (
-                    <button onClick={() => updateSpins(u.id, u.spins)} style={{ background: '#10b981', ...btnStyle }}><Check size={16} /></button>
-                  ) : (
-                    <button onClick={() => { setEditUser(u.id); setNewSpins(u.spins); }} style={{ background: '#3b82f6', ...btnStyle }}><Edit2 size={16} /></button>
-                  )}
-                  <button onClick={() => deleteUser(u.id)} style={{ background: '#ef4444', ...btnStyle }}><Trash2 size={16} /></button>
+
+                {/* Right: User List */}
+                <div className="glass-card" style={{ flex: 1.2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0 }}>Danh sách người chơi</h3>
+                        <input 
+                            type="text" 
+                            placeholder="Tìm user..." 
+                            value={searchUser}
+                            onChange={e => setSearchUser(e.target.value)}
+                            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #334155', color: '#fff', padding: '5px 10px', borderRadius: '6px' }}
+                        />
+                    </div>
+                    <div className="panel-content" style={{ padding: '10px', overflowY: 'auto' }}>
+                        {filteredUsers.map(u => {
+                            const hasP = requests.some(r => r.username === u.username) || dailyQuests.some(q => q.user.username === u.username);
+                            return (
+                                <div 
+                                    key={u.id} 
+                                    onClick={() => setSelectedUser(u)}
+                                    style={{ 
+                                        padding: '12px', borderRadius: '10px', marginBottom: '8px', cursor: 'pointer',
+                                        background: selectedUser?.id === u.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',
+                                        border: selectedUser?.id === u.id ? '1px solid #3b82f6' : '1px solid transparent',
+                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{ fontWeight: 'bold' }}>{u.username}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Lượt quay: {u.spins} | Năng lượng: {u.miniGamePoints}</div>
+                                    </div>
+                                    {hasP && <div style={{ background: '#ef4444', width: '10px', height: '10px', borderRadius: '50%' }} title="Có yêu cầu chờ duyệt" />}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-      </div>
-
-      {/* --- Ảnh phóng to --- tobacco */}
-      {selectedQuestImage && (
-        <div 
-          onClick={() => setSelectedQuestImage(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <img src={selectedQuestImage} alt="Large" style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '10px', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }} />
-          <div style={{ position: 'absolute', top: '20px', right: '20px', color: '#fff', fontSize: '2rem', cursor: 'pointer' }}>&times;</div>
+            {/* Lightbox forQuest Images */}
+            {selectedQuestImage && (
+                <div onClick={() => setSelectedQuestImage(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src={selectedQuestImage} style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: '10px' }} />
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
-
-const btnStyle = {
-  color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center'
-}
-
-const inputStyle = {
-  background: 'rgba(0,0,0,0.3)', border: '1px solid #334155', color: '#fff', padding: '8px 10px', borderRadius: '6px', outline: 'none'
-}
 
 export default AdminPanel;
