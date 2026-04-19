@@ -45,8 +45,14 @@ const LuckyWheel = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!username) navigate('/login');
-    else fetchData();
+    if (!username) {
+      navigate('/login');
+    } else {
+      fetchData();
+      // Tự động làm mới dữ liệu mỗi 20 giây để đồng bộ với Admin
+      const interval = setInterval(fetchData, 20000);
+      return () => clearInterval(interval);
+    }
   }, [username]);
 
   const fetchData = async () => {

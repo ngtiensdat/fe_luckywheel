@@ -44,8 +44,8 @@ const AdminPanel = () => {
     const updateSpins = async () => {
         try {
             await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/users/${selectedUser.username}/spins`, { spins: editSpins });
-            alert("Đã cập nhật lượt quay!");
-            fetchAll();
+            alert("Đã cập nhật lượt quay thành công!");
+            await fetchAll(); // Nạp lại danh sách mới nhất
         } catch(e) { alert("Lỗi cập nhật lượt quay"); }
     };
 
@@ -168,7 +168,10 @@ const AdminPanel = () => {
                             return (
                                 <div 
                                     key={u.id} 
-                                    onClick={() => setSelectedUser(u)}
+                                    onClick={() => {
+                                        setSelectedUser(u);
+                                        setEditSpins(u.spins); // Đồng bộ ô nhập liệu ngay lập tức
+                                    }}
                                     style={{ 
                                         padding: '12px', borderRadius: '10px', marginBottom: '8px', cursor: 'pointer',
                                         background: selectedUser?.id === u.id ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',
