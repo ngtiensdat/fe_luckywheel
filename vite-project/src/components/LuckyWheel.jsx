@@ -395,8 +395,8 @@ const LuckyWheel = () => {
                 {history.length > 0 ? history.map((item, idx) => (
                     <div key={idx} className="history-item" style={{ marginBottom: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span className="item" style={{ color: '#fbbf24' }}>{item.prizeName}</span>
-                            <span className="time" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.spinDate).toLocaleDateString()}</span>
+                            <span className="item" style={{ color: '#fbbf24' }}>{item.prize}</span>
+                            <span className="time" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.createdAt).toLocaleString('vi-VN')}</span>
                         </div>
                     </div>
                 )) : <p className="empty-text">Chưa có lịch sử quay...</p>}
