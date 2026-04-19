@@ -505,83 +505,83 @@ body {
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+/* --- RESPONSIVE OPTIMIZATIONS --- */
 @media (max-width: 1024px) {
   .wheel-layout {
-    flex-direction: column; /* Xếp chồng: Vòng quay trên, Bảng dưới */
+    flex-direction: column;
     height: auto;
     max-height: none;
     padding-top: 5rem;
   }
   .wheel-page {
     width: 100%;
-    margin-bottom: 1rem;
-    padding: 1rem;
+    margin-bottom: 2rem;
   }
   .right-panel {
     width: 100%;
     height: auto;
-    padding: 1rem;
+    padding: 1.5rem;
     padding-top: 0;
+  }
+  .admin-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    gap: 8px;
+  }
+  
+  .icon-btn {
+    width: 42px;
+    height: 42px;
+    padding: 0 !important;
+  }
+
+  .icon-btn span, .hide-mobile {
+    display: none; /* Ẩn text trên nút để gọn giao diện mobile */
+  }
+
+  .wheel-container {
+    width: 320px;
+    height: 320px;
+    max-width: 85vw;
+  }
+
+  .admin-layout {
+      padding: 0.5rem;
+  }
+  
+  .admin-grid > div {
+      height: 450px !important;
   }
 }
 
 @media (max-width: 480px) {
-  .top-bar {
-    top: 0.8rem;
-    left: 0.8rem;
-    right: 0.8rem;
-    flex-wrap: wrap; /* Cho phép rớt dòng nếu quá hẹp */
-    gap: 0.5rem;
-  }
-
-  .icon-btn {
-    width: 38px;
-    height: 38px;
-  }
-
-  .login-container {
-    padding: 1rem;
-    max-width: 100%;
-  }
-
-  .glass-card {
-    padding: 2rem 1.2rem;
-    border-radius: 20px;
+  .wheel-container {
+    width: 280px;
+    height: 280px;
   }
 
   .header h1 {
-    font-size: 1.6rem !important;
-  }
-
-  .header p {
-    font-size: 0.9rem !important;
-  }
-
-  .logout-btn {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
-    height: 34px;
-  }
-  
-  .hide-mobile {
-    display: none; 
-  }
-
-  .wheel-container {
-    width: 80vw;
-    margin: 1rem auto;
+    font-size: 1.8rem !important;
   }
 
   .spin-btn {
-    padding: 0.8rem !important;
+    padding: 1rem !important;
     font-size: 1rem !important;
+    letter-spacing: 1px;
   }
 
   .side-panel.modal {
-    width: 95vw;
-    height: 80vh;
-    top: 10%;
-    left: 2.5vw;
-    transform: none !important;
+    width: 96vw;
+    left: 2vw;
+    top: 50%;
+    transform: translate(0, -50%) !important;
   }
 }

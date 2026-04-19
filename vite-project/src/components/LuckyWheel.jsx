@@ -58,16 +58,25 @@ const LuckyWheel = () => {
   const fetchData = async () => {
     try {
       // Ưu tiên số 1: Lấy lượt quay và thông tin user
-      const u = await axios.get(import.meta.env.VITE_API_BASE_URL + `/api/users/${username}`);
-      setSpinsLeft(u.data.spins);
-      setMiniPoints(u.data.miniGamePoints || 0);
+      const uRes = await axios.get(import.meta.env.VITE_API_BASE_URL + `/api/users/${username}`);
+      const userData = uRes.data;
+      setSpinsLeft(userData.spins);
+      setMiniPoints(userData.miniGamePoints || 0);
 
-      // Các dữ liệu phụ: Lấy độc lập, lỗi cái này không ảnh hưởng cái kia
+      // Tự động mở lại trò chơi nếu người dùng chưa chơi xong (do F5...)
+      if (!isSpinning) {
+        if (userData.pendingMiniGame > 0) {
+          setIsMiniGameOpen(true);
+          setIsPractice(false);
+        } else if (userData.pendingSlotMachine > 0) {
+          setIsSlotMachineOpen(true);
+        }
+      }
+
+      // Các dữ liệu phụ: Lấy độc lập
       axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/inventory/${username}`).then(res => setInventory(res.data)).catch(() => {});
       axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/history/${username}`).then(res => setHistory(res.data)).catch(() => {});
       axios.get(import.meta.env.VITE_API_BASE_URL + `/api/wheel/records/${username}`).then(res => setRecords(res.data)).catch(() => {});
-      
-      // Quan trọng: Thêm tiền tố api nếu cần (kiểm tra lại QuestController mapping)
       axios.get(import.meta.env.VITE_API_BASE_URL + `/api/quests/checkin/status/${username}`).then(res => setCheckInInfo(res.data)).catch(() => {});
       axios.get(import.meta.env.VITE_API_BASE_URL + `/api/quests/daily-status/${username}`).then(res => setDailyStatus(res.data)).catch(() => {});
       
@@ -75,6 +84,18 @@ const LuckyWheel = () => {
       console.error("Lỗi lấy thông tin người dùng:", e);
     }
   };
+
+  // Tự động mở trò chơi khi quay trúng
+  useEffect(() => {
+    if (!isSpinning && prize) {
+      if (prize === 'Mini game') {
+        setIsMiniGameOpen(true);
+        setIsPractice(false);
+      } else if (prize === 'Slot Machine') {
+        setIsSlotMachineOpen(true);
+      }
+    }
+  }, [isSpinning, prize]);
 
   const spinWheel = async () => {
     if (isSpinning || spinsLeft <= 0) return;
@@ -86,10 +107,12 @@ const LuckyWheel = () => {
       const targetAngle = 360 - (data.index * sliceAngle + sliceAngle / 2);
       setRotation(prev => prev + (360 * 8) + targetAngle - (prev % 360));
       setSpinsLeft(data.spinsLeft);
+      // Lưu lại kết quả để useEffect sau đó xử lý
       setPrize(data.prize);
       if(!isMuted) new Audio(SOUNDS.spin).play();
-      fetchData();
     } catch (err) { setIsSpinning(false); }
+    
+    // Đợi vòng quay dừng hẳn rồi mới hiển thị thông báo và mở Game
     setTimeout(() => { 
         setIsSpinning(false); 
         if(!isMuted) new Audio(SOUNDS.win).play(); 
@@ -312,8 +335,29 @@ const LuckyWheel = () => {
       </AnimatePresence>
 
       {/* --- Other Modals remain unchanged --- */}
-      <MiniGameModal isOpen={isMiniGameOpen} isPractice={isPractice} isMuted={isMuted} onClose={() => { setIsMiniGameOpen(false); setIsPractice(false); fetchData(); }} username={username} fetchInventory={() => fetchData()} fetchHistory={() => fetchData()} onChestAwarded={(c) => { setChestsCount(c); setIsChestOpen(true); }} />
-      <SlotMachineModal isOpen={isSlotMachineOpen} isMuted={isMuted} onClose={() => { setIsSlotMachineOpen(false); fetchData(); }} username={username} onSpinResult={(s) => setSpinsLeft(s)} fetchInventory={() => fetchData()} fetchHistory={() => fetchData()} />
+      {isMiniGameOpen && (
+        <MiniGameModal 
+          isOpen={isMiniGameOpen} 
+          onClose={() => { setIsMiniGameOpen(false); fetchData(); }} 
+          username={username}
+          fetchInventory={fetchData}
+          fetchHistory={fetchData}
+          onChestAwarded={(c) => { setChestsCount(c); setIsChestOpen(true); }}
+          isPractice={isPractice}
+          isMuted={isMuted}
+        />
+      )}
+      {isSlotMachineOpen && (
+        <SlotMachineModal 
+          isOpen={isSlotMachineOpen} 
+          onClose={() => { setIsSlotMachineOpen(false); fetchData(); }} 
+          username={username} 
+          onSpinResult={(s) => { setSpinsLeft(s); fetchData(); }} 
+          fetchInventory={fetchData} 
+          fetchHistory={fetchData}
+          isMuted={isMuted}
+        />
+      )}
       <ChestModal isOpen={isChestOpen} count={chestsCount} onClose={() => setIsChestOpen(false)} />
       
       {/* Inventory & History Modals */}
@@ -324,12 +368,33 @@ const LuckyWheel = () => {
             <motion.div className="side-panel modal" initial={{ scale: 0.9, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }}>
               <div className="panel-header"><h3>Túi đồ của {username}</h3><button className="close-btn" onClick={() => setShowInventory(false)}><X/></button></div>
               <div className="panel-content">
-                {inventory.filter(i => i.status === 'Mới').map(item => (
-                    <div key={item.id} className="inventory-item" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {inventory.filter(i => i.status === 'Mới').length > 0 ? inventory.filter(i => i.status === 'Mới').map(item => (
+                    <div key={item.id} className="inventory-item" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                         <span>{item.itemName}</span>
-                        {!item.itemName.includes('½') && <button onClick={async () => { await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/wheel/inventory/${item.id}/use`); alert("Đã gửi yêu cầu!"); setShowInventory(false); fetchData(); }} style={{ background: '#10b981', color:'#fff', border:'none', padding:'5px 10px', borderRadius:'5px' }}>Dùng</button>}
+                        {!item.itemName.includes('½') && <button onClick={async () => { await axios.put(import.meta.env.VITE_API_BASE_URL + `/api/wheel/inventory/${item.id}/use`); alert("Đã gửi yêu cầu!"); setShowInventory(false); fetchData(); }} style={{ background: '#10b981', color:'#fff', border:'none', padding:'5px 10px', borderRadius:'5px', cursor: 'pointer' }}>Dùng</button>}
                     </div>
-                ))}
+                )) : <p className="empty-text">Túi đồ đang trống...</p>}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showHistory && (
+          <>
+            <motion.div className="overlay" onClick={() => setShowHistory(false)} />
+            <motion.div className="side-panel modal" initial={{ scale: 0.9, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }}>
+              <div className="panel-header"><h3>Lịch sử quay</h3><button className="close-btn" onClick={() => setShowHistory(false)}><X/></button></div>
+              <div className="panel-content">
+                {history.length > 0 ? history.map((item, idx) => (
+                    <div key={idx} className="history-item" style={{ marginBottom: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span className="item" style={{ color: '#fbbf24' }}>{item.prizeName}</span>
+                            <span className="time" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(item.spinDate).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                )) : <p className="empty-text">Chưa có lịch sử quay...</p>}
               </div>
             </motion.div>
           </>
